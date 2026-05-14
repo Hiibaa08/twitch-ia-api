@@ -5,8 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get("/ia", (req, res) => {
-
-        const key = req.query.key;
+    const key = req.query.key;
 
     if (key !== "080899HL") {
         return res.status(403).send("No autorizado");
@@ -29,7 +28,6 @@ app.get("/ia", (req, res) => {
     const random = respuestas[Math.floor(Math.random() * respuestas.length)];
 
     res.send(`@${user} ${random}`);
-
 });
 
 app.listen(PORT, () => {
