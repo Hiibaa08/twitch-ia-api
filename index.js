@@ -1,10 +1,14 @@
 const express = require("express");
+const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 
-app.get("/ia", (req, res) => {
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+});
+
+app.get("/ia", async (req, res) => {
     const key = req.query.key;
 
     if (key !== "080899HL") {
@@ -18,16 +22,19 @@ app.get("/ia", (req, res) => {
         return res.send(`@${user} escribe algo después del comando.`);
     }
 
-    const respuestas = [
-        "eso estuvo potente.",
-        "la IA aprueba ese mensaje.",
-        "eso tiene energía de protagonista.",
-        "suena sospechosamente épico."
-    ];
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: `Responde en español, máximo 220 caracteres, tono de chat de Twitch, con humor breve. Usuario ${user} dice: ${msg}`,
+        });
 
-    const random = respuestas[Math.floor(Math.random() * respuestas.length)];
+        const texto = response.text.trim();
 
-    res.send(`@${user} ${random}`);
+        res.send(`@${user} ${texto}`);
+    } catch (error) {
+        console.error(error);
+        res.send(`@${user} hubo un error con la IA.`);
+    }
 });
 
 app.listen(PORT, () => {
