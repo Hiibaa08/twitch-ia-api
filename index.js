@@ -24,7 +24,7 @@ app.get("/ia", async (req, res) => {
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
+            model: "gemini-1.5-flash",
             contents: `Responde en español, máximo 220 caracteres, tono de chat de Twitch, con humor breve. Usuario ${user} dice: ${msg}`,
         });
 
