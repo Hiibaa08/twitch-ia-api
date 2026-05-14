@@ -6,6 +6,12 @@ const PORT = process.env.PORT || 3000;
 
 app.get("/ia", (req, res) => {
 
+        const key = req.query.key;
+
+    if (key !== "080899HL") {
+        return res.status(403).send("No autorizado");
+    }
+
     const user = req.query.user || "usuario";
     const msg = req.query.msg || "";
 
