@@ -15,6 +15,23 @@ const OPENROUTER_MODELS = [
     "openrouter/free"
 ];
 
+const memoriasPorCanal = {
+    hibaa08: {
+        personalidad: "Bot chileno, sarcástico, gamer y fan del anime.",
+        lore: "El chat suele bromear con One Piece, teorías absurdas y memes internos."
+    },
+
+    pantruaku: {
+        personalidad: "Bot chileno, troll, caótico, fan del anime, gamer y absurdamente cursed.",
+        lore: "Le gustan los chistes del pico (chileno), humor absurdo y bromear con One Piece, humor cursed y memes internos."
+    },
+
+    roedorhumano: {
+        personalidad: "Bot pesado, mañoso como la streamer pero relajado con el chat.",
+        lore: "Humor más tranquilo, relajado, gamer, memes internos."
+    }
+};
+
 function respuestaLocal(user) {
     const respuestas = [
         `@${user} la IA se quedó sin chakra, pero el bot sigue vivo 🫡`,
@@ -26,7 +43,7 @@ function respuestaLocal(user) {
     return respuestas[Math.floor(Math.random() * respuestas.length)];
 }
 
-async function responderConOpenRouterModelo(user, msg, model) {
+async function responderConOpenRouterModelo(user, msg, model, channel, memoriaCanal) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -40,7 +57,22 @@ async function responderConOpenRouterModelo(user, msg, model) {
             messages: [
                 {
                     role: "system",
-                    content: "Eres un bot de Twitch. Responde en español, máximo 220 caracteres, con humor breve, estilo chat gamer, sin ser ofensivo."
+                    content: `
+Eres el bot oficial del canal ${channel}.
+
+Personalidad del canal:
+${memoriaCanal.personalidad}
+
+Lore del canal:
+${memoriaCanal.lore}
+
+Reglas:
+- Responde en español.
+- Máximo 220 caracteres.
+- Estilo Twitch gamer, natural y entretenido.
+- Puedes usar humor chileno si calza con el canal.
+- No seas excesivamente ofensivo ni pesado.
+`
                 },
                 {
                     role: "user",
@@ -65,11 +97,11 @@ async function responderConOpenRouterModelo(user, msg, model) {
     return texto;
 }
 
-async function responderConOpenRouter(user, msg) {
+async function responderConOpenRouter(user, msg, channel, memoriaCanal) {
     for (const model of OPENROUTER_MODELS) {
         try {
             console.log(`Intentando OpenRouter con modelo: ${model}`);
-            return await responderConOpenRouterModelo(user, msg, model);
+            return await responderConOpenRouterModelo(user, msg, model, channel, memoriaCanal);
         } catch (error) {
             console.error(`Falló modelo ${model}:`, error.message);
         }
@@ -78,10 +110,22 @@ async function responderConOpenRouter(user, msg) {
     throw new Error("Fallaron todos los modelos de OpenRouter");
 }
 
-async function responderConGemini(user, msg) {
+async function responderConGemini(user, msg, channel, memoriaCanal) {
     const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Responde en español, máximo 220 caracteres, tono de chat de Twitch, con humor breve. Usuario ${user} dice: ${msg}`,
+        contents: `
+Eres el bot oficial del canal ${channel}.
+
+Personalidad del canal:
+${memoriaCanal.personalidad}
+
+Lore del canal:
+${memoriaCanal.lore}
+
+Responde en español, máximo 220 caracteres, tono Twitch gamer, natural y entretenido.
+
+Usuario ${user} dice: ${msg}
+`,
     });
 
     return response.text.trim();
@@ -94,6 +138,9 @@ app.get("/ia", async (req, res) => {
         return res.status(403).send("No autorizado");
     }
 
+    const channel = req.query.channel || "hibaa08";
+    const memoriaCanal = memoriasPorCanal[channel] || memoriasPorCanal.hibaa08;
+
     const user = req.query.user || "usuario";
     const msg = (req.query.msg || "").slice(0, 180);
 
@@ -102,14 +149,14 @@ app.get("/ia", async (req, res) => {
     }
 
     try {
-        const texto = await responderConOpenRouter(user, msg);
+        const texto = await responderConOpenRouter(user, msg, channel, memoriaCanal);
         return res.send(`@${user} ${texto}`);
     } catch (errorOpenRouter) {
         console.error("Falló todo OpenRouter:", errorOpenRouter.message);
     }
 
     try {
-        const texto = await responderConGemini(user, msg);
+        const texto = await responderConGemini(user, msg, channel, memoriaCanal);
         return res.send(`@${user} ${texto}`);
     } catch (errorGemini) {
         console.error("Falló Gemini:", errorGemini.message);
