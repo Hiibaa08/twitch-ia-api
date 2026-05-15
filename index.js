@@ -8,7 +8,25 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
 });
 
-async function responderConOpenRouter(user, msg) {
+const OPENROUTER_MODELS = [
+    "deepseek/deepseek-chat:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "openrouter/free"
+];
+
+function respuestaLocal(user) {
+    const respuestas = [
+        `@${user} la IA se quedó sin chakra, pero el bot sigue vivo 🫡`,
+        `@${user} los modelos colapsaron, respuesta modo supervivencia activada.`,
+        `@${user} la IA está en cooldown, pero yo no abandono el chat.`,
+        `@${user} error místico detectado. El bot responde desde la trinchera.`
+    ];
+
+    return respuestas[Math.floor(Math.random() * respuestas.length)];
+}
+
+async function responderConOpenRouterModelo(user, msg, model) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -18,7 +36,7 @@ async function responderConOpenRouter(user, msg) {
             "X-Title": "Twitch IA Bot"
         },
         body: JSON.stringify({
-            model: "openrouter/free",
+            model,
             messages: [
                 {
                     role: "system",
@@ -33,11 +51,31 @@ async function responderConOpenRouter(user, msg) {
     });
 
     if (!response.ok) {
-        throw new Error(`OpenRouter error: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`OpenRouter ${model} error ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content?.trim();
+    const texto = data.choices?.[0]?.message?.content?.trim();
+
+    if (!texto) {
+        throw new Error(`OpenRouter ${model} respondió vacío`);
+    }
+
+    return texto;
+}
+
+async function responderConOpenRouter(user, msg) {
+    for (const model of OPENROUTER_MODELS) {
+        try {
+            console.log(`Intentando OpenRouter con modelo: ${model}`);
+            return await responderConOpenRouterModelo(user, msg, model);
+        } catch (error) {
+            console.error(`Falló modelo ${model}:`, error.message);
+        }
+    }
+
+    throw new Error("Fallaron todos los modelos de OpenRouter");
 }
 
 async function responderConGemini(user, msg) {
@@ -57,31 +95,27 @@ app.get("/ia", async (req, res) => {
     }
 
     const user = req.query.user || "usuario";
-    const msg = req.query.msg || "";
+    const msg = (req.query.msg || "").slice(0, 180);
 
     if (!msg) {
         return res.send(`@${user} escribe algo después del comando.`);
     }
 
     try {
-        let texto;
-
-        try {
-            texto = await responderConOpenRouter(user, msg);
-        } catch (errorOpenRouter) {
-            console.error("Falló OpenRouter:", errorOpenRouter.message);
-            texto = await responderConGemini(user, msg);
-        }
-
-        if (!texto) {
-            texto = "la IA se quedó pensando demasiado.";
-        }
-
-        res.send(`@${user} ${texto}`);
-    } catch (error) {
-        console.error("Error general:", error);
-        res.send(`@${user} hubo un error con la IA.`);
+        const texto = await responderConOpenRouter(user, msg);
+        return res.send(`@${user} ${texto}`);
+    } catch (errorOpenRouter) {
+        console.error("Falló todo OpenRouter:", errorOpenRouter.message);
     }
+
+    try {
+        const texto = await responderConGemini(user, msg);
+        return res.send(`@${user} ${texto}`);
+    } catch (errorGemini) {
+        console.error("Falló Gemini:", errorGemini.message);
+    }
+
+    return res.send(respuestaLocal(user));
 });
 
 app.listen(PORT, () => {
