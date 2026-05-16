@@ -41,6 +41,43 @@ const memoriasPorCanal = {
 };
 
 async function guardarMemoria(channel, relatedUser, content) {
+
+async function obtenerMemorias(channel, msg) {
+    try {
+        const palabras = msg
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(p => p.length > 3)
+            .slice(0, 5);
+
+        let query = supabase
+            .from("bot_memories")
+            .select("content, related_user, created_at")
+            .eq("channel", channel)
+            .order("created_at", { ascending: false })
+            .limit(8);
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error("Error leyendo memorias:", error.message);
+            return "";
+        }
+
+        if (!data || data.length === 0) {
+            return "";
+        }
+
+        return data
+            .map(m => `- ${m.content}`)
+            .join("\n");
+
+    } catch (err) {
+        console.error("Error Supabase leyendo:", err.message);
+        return "";
+    }
+}
+
     try {
         const { error } = await supabase
             .from("bot_memories")
@@ -74,7 +111,7 @@ function respuestaLocal(user) {
     return respuestas[Math.floor(Math.random() * respuestas.length)];
 }
 
-async function responderConOpenRouterModelo(user, msg, model, channel, memoriaCanal) {
+async function responderConOpenRouterModelo(user, msg, model, channel, memoriaCanal, memoriasPersistentes) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -96,6 +133,9 @@ ${memoriaCanal.personalidad}
 
 Lore del canal:
 ${memoriaCanal.lore}
+
+Memorias persistentes del canal:
+${memoriasPersistentes || "Sin memorias relevantes todavía."}
 
 Reglas globales:
 - Responde en español.
@@ -134,11 +174,11 @@ Reglas globales:
     return texto;
 }
 
-async function responderConOpenRouter(user, msg, channel, memoriaCanal) {
+async function responderConOpenRouter(user, msg, channel, memoriaCanal, memoriasPersistentes) {
     for (const model of OPENROUTER_MODELS) {
         try {
             console.log(`Intentando OpenRouter con modelo: ${model}`);
-            return await responderConOpenRouterModelo(user, msg, model, channel, memoriaCanal);
+            return await responderConOpenRouterModelo(user, msg, model, channel, memoriaCanal, memoriasPersistentes);
         } catch (error) {
             console.error(`Falló modelo ${model}:`, error.message);
         }
@@ -185,8 +225,16 @@ app.get("/ia", async (req, res) => {
         return res.send(`@${user} escribe algo después del comando.`);
     }
 
+    const memoriasPersistentes = await obtenerMemorias(channel, msg);
+
     try {
-        const texto = await responderConOpenRouter(user, msg, channel, memoriaCanal);
+        const texto = await responderConOpenRouter(
+    user,
+    msg,
+    channel,
+    memoriaCanal,
+    memoriasPersistentes
+);
     
 const mensajeLower = msg.toLowerCase();
 
