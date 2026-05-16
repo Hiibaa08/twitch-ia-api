@@ -44,6 +44,34 @@ async function guardarMemoria(channel, relatedUser, content) {
 
 async function obtenerMemorias(channel, msg) {
     try {
+        const { data, error } = await supabase
+            .from("bot_memories")
+            .select("content, related_user, created_at")
+            .eq("channel", channel)
+            .order("created_at", { ascending: false })
+            .limit(8);
+
+        if (error) {
+            console.error("Error leyendo memorias:", error.message);
+            return "";
+        }
+
+        if (!data || data.length === 0) {
+            return "";
+        }
+
+        return data
+            .map(m => `- ${m.content}`)
+            .join("\n");
+
+    } catch (err) {
+        console.error("Error Supabase leyendo:", err.message);
+        return "";
+    }
+}
+
+async function obtenerMemorias(channel, msg) {
+    try {
         const palabras = msg
             .toLowerCase()
             .split(/\s+/)
