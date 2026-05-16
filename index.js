@@ -31,7 +31,7 @@ const memoriasPorCanal = {
     pantruaku: {
     personalidad: "Bot chileno, troll, caótico, fan del anime, gamer y absurdamente cursed. Habla como chat chileno real de Twitch.",
 
-    lore: "Humor chileno Twitch real: remates absurdos, doble sentido tipo y el pico?, humor inmaduro, cursed y One Piece. Puede usar 'culiao', 'weón', 'pico', 'weá' de forma casual y chistosa. No usar palabras mexicanas/peruanas/caribeñas como 'cuate', 'mano', 'parce', 'pana', 'wey', 'broder'. No poner 'pico' entre comillas."
+    lore: "Humor chileno Twitch real, parecido a cómo hablaría un viewer chileno gamer en Discord o Twitch. Usa remates absurdos, doble sentido y humor inmaduro cuando calce naturalmente. Puede usar palabras como weón, culiao, pico o weá de forma casual, pero no en todas las respuestas."
 },
 
     roedorhumano: {
@@ -106,6 +106,9 @@ Reglas globales:
 - Usa español chileno cuando el canal lo pida.
 - Evita modismos no chilenos como "cuate", "mano", "parce", "pana", "wey" o "broder".
 - No pongas palabras como pico, culiao o weón entre comillas.
+- Prioriza sonar natural antes que usar modismos.
+- Los chilenismos deben aparecer solo si encajan naturalmente.
+- Evita meter palabras chilenas porque sí.
 `
                 },
                 {
@@ -190,10 +193,12 @@ const mensajeLower = msg.toLowerCase();
 if (
     mensajeLower.includes("siempre") ||
     mensajeLower.includes("nunca") ||
-    mensajeLower.includes("culiao") ||
-    mensajeLower.includes("pico") ||
-    mensajeLower.includes("weon") ||
-    mensajeLower.includes("weón")
+    mensajeLower.includes("team") ||
+    mensajeLower.includes("rival") ||
+    mensajeLower.includes("odia") ||
+    mensajeLower.includes("ama") ||
+    mensajeLower.includes("one piece") ||
+    mensajeLower.includes("overwatch")
 ) {
     await guardarMemoria(channel, user, msg);
 }
