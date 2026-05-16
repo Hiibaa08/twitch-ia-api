@@ -1,6 +1,13 @@
 const express = require("express");
 const { GoogleGenAI } = require("@google/genai");
 
+const { createClient } = require("@supabase/supabase-js");
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -32,6 +39,29 @@ const memoriasPorCanal = {
         lore: "Humor más tranquilo, relajado, gamer, memes internos."
     }
 };
+
+async function guardarMemoria(channel, relatedUser, content) {
+    try {
+        const { error } = await supabase
+            .from("bot_memories")
+            .insert([
+                {
+                    channel,
+                    related_user: relatedUser,
+                    content
+                }
+            ]);
+
+        if (error) {
+            console.error("Error guardando memoria:", error.message);
+        } else {
+            console.log("Memoria guardada:", content);
+        }
+
+    } catch (err) {
+        console.error("Error Supabase:", err.message);
+    }
+}
 
 function respuestaLocal(user) {
     const respuestas = [
@@ -151,6 +181,20 @@ app.get("/ia", async (req, res) => {
 
     try {
         const texto = await responderConOpenRouter(user, msg, channel, memoriaCanal);
+    
+const mensajeLower = msg.toLowerCase();
+
+if (
+    mensajeLower.includes("siempre") ||
+    mensajeLower.includes("nunca") ||
+    mensajeLower.includes("culiao") ||
+    mensajeLower.includes("pico") ||
+    mensajeLower.includes("weon") ||
+    mensajeLower.includes("weón")
+) {
+    await guardarMemoria(channel, user, msg);
+}
+    
         return res.send(`@${user} ${texto}`);
     } catch (errorOpenRouter) {
         console.error("Falló todo OpenRouter:", errorOpenRouter.message);
