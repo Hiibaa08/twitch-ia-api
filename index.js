@@ -41,6 +41,27 @@ const memoriasPorCanal = {
 };
 
 async function guardarMemoria(channel, relatedUser, content) {
+    try {
+        const { error } = await supabase
+            .from("bot_memories")
+            .insert([
+                {
+                    channel,
+                    related_user: relatedUser,
+                    content
+                }
+            ]);
+
+        if (error) {
+            console.error("Error guardando memoria:", error.message);
+        } else {
+            console.log("Memoria guardada:", content);
+        }
+
+    } catch (err) {
+        console.error("Error Supabase:", err.message);
+    }
+}
 
 async function obtenerMemorias(channel, msg) {
     try {
@@ -67,64 +88,6 @@ async function obtenerMemorias(channel, msg) {
     } catch (err) {
         console.error("Error Supabase leyendo:", err.message);
         return "";
-    }
-}
-
-async function obtenerMemorias(channel, msg) {
-    try {
-        const palabras = msg
-            .toLowerCase()
-            .split(/\s+/)
-            .filter(p => p.length > 3)
-            .slice(0, 5);
-
-        let query = supabase
-            .from("bot_memories")
-            .select("content, related_user, created_at")
-            .eq("channel", channel)
-            .order("created_at", { ascending: false })
-            .limit(8);
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error("Error leyendo memorias:", error.message);
-            return "";
-        }
-
-        if (!data || data.length === 0) {
-            return "";
-        }
-
-        return data
-            .map(m => `- ${m.content}`)
-            .join("\n");
-
-    } catch (err) {
-        console.error("Error Supabase leyendo:", err.message);
-        return "";
-    }
-}
-
-    try {
-        const { error } = await supabase
-            .from("bot_memories")
-            .insert([
-                {
-                    channel,
-                    related_user: relatedUser,
-                    content
-                }
-            ]);
-
-        if (error) {
-            console.error("Error guardando memoria:", error.message);
-        } else {
-            console.log("Memoria guardada:", content);
-        }
-
-    } catch (err) {
-        console.error("Error Supabase:", err.message);
     }
 }
 
