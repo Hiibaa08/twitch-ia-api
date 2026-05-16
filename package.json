@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "@google/genai": "^2.2.0",
+    "@supabase/supabase-js": "^2.105.4",
     "express": "^5.2.1"
   }
 }
